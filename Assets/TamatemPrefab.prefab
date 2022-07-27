@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3994082936683575462}
-  - component: {fileID: 111968953998585025}
-  - component: {fileID: -5034337145596745827}
+  - component: {fileID: 3444580483344284595}
+  - component: {fileID: 6619475773508691838}
   m_Layer: 0
   m_Name: TamatemPrefab
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &111968953998585025
+--- !u!114 &3444580483344284595
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d75a9712a55c14266a2381b236e32fea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-5034337145596745827
+--- !u!114 &6619475773508691838
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -58,3 +58,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   InfoText: {fileID: 0}
+  DataPlayerText: {fileID: 0}
