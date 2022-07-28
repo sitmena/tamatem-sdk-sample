@@ -63,6 +63,8 @@ sysinfo.txt
 *.unitypackage
 *.app
 
+!tamatem-sdk.unitypackage
+
 # Crashlytics generated file
 crashlytics-build.properties
 
