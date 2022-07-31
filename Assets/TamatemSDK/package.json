@@ -1,0 +1,13 @@
+{
+  "name": "com.lujainb.unitypoc",
+  "version": "1.0.0",
+  "displayName": "Tamatem SDK",
+  "description": "Tamatem SDK",
+  "author": "SiTech",
+  "keywords": [
+    "unity",
+    "native",
+    "utility"
+  ],
+  "hideInEditor": false
+}
