@@ -21,7 +21,7 @@ Once your Unity project is ready and you want to setup your Android game/app, pl
 1. Go to File -> Build Settings...
 2. Click on Player Settings then make sure Android tab is selected.
 3. Open Publisher Settings panel.
-4. Check `Custom Main Gradle Template` and `Custom Gradle Properties Template` checkboxes.
+4. Check `Custom Main Gradle Template`, `Custom Gradle Properties Template` and `Custom Main Manifest` checkboxes.
 5. Open `mainTemplate.gradle` file and paste the following lines inside the dependencies tag.
 ```shell script
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
@@ -38,9 +38,26 @@ Once your Unity project is ready and you want to setup your Android game/app, pl
 ```shell script
     android.useAndroidX=true
 ```
-7. Close the Player Settings screens and now you can either run the app directly using the `Build And Run` button or by checking the `Export Project` checkbox.
-8. Press on the Export button and choose the folder that will contain the Android project.
-9. Open the project using Android Studio to enjoy using your app.
+7. Next Open `AndroidManifest.xml` file and paste the following snippet inside the application tag.
+```shell script
+    <activity
+        android:name="com.tamatem.auth.LoadingActivity"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:theme="@style/Theme.Transparent">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                // TODO: make sure to change these values based on the configurations of the game
+                <data android:scheme="game1"
+                    android:host="oauth-callback" />
+            </intent-filter>
+    </activity>
+```
+8. Close the Player Settings screens and now you can either run the app directly using the `Build And Run` button or by checking the `Export Project` checkbox.
+9. Press on the Export button and choose the folder that will contain the Android project.
+10. Open the project using Android Studio to enjoy using your app.
 
 
 ## iOS Setup:

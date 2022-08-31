@@ -25,6 +25,13 @@ namespace AuthenticationScope
         private String redirectURI;
         private bool isDevelopment;
 
+        private String getServerApiUrl() {
+            if (isDevelopment) {
+                return "https://tamatem.dev.be.starmena-streams.com/api/";
+            }
+            return "https://tamatem.prod.be.starmena-streams.com/api/";
+        }
+
         void Awake(){
             if (_instance == null){
                 _instance = this;
@@ -227,7 +234,7 @@ namespace AuthenticationScope
         }
 
         internal IEnumerator GetUser() {
-             using (UnityWebRequest www = UnityWebRequest.Get("https://tamatem.dev.be.starmena-streams.com/api/player/")){
+             using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "player/")){
                 www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
                 yield return www.SendWebRequest();
 
@@ -243,7 +250,7 @@ namespace AuthenticationScope
         }
 
         internal IEnumerator PurchasedInventory() {
-             using (UnityWebRequest www = UnityWebRequest.Get("https://tamatem.dev.be.starmena-streams.com/api/inventory-item/")){
+             using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "inventory-item/")){
                 www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
                 yield return www.SendWebRequest();
 
@@ -259,7 +266,7 @@ namespace AuthenticationScope
         }
 
         internal IEnumerator FilterInventory(bool isRedeemed) {
-             using (UnityWebRequest www = UnityWebRequest.Get("https://tamatem.dev.be.starmena-streams.com/api/inventory-item/?is_redeemed=" + isRedeemed)){
+             using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "inventory-item/?is_redeemed=" + isRedeemed)){
                 www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
                 yield return www.SendWebRequest();
 
@@ -278,7 +285,7 @@ namespace AuthenticationScope
             string data = "{\"is_redeemed\":true}";
 
             var www = new UnityWebRequest();
-            www.url = "https://tamatem.dev.be.starmena-streams.com/api/inventory/redeem/" + inventoryId + "/";
+            www.url = getServerApiUrl() + "inventory/redeem/" + inventoryId + "/";
             www.method = UnityWebRequest.kHttpVerbPUT;
             www.downloadHandler = new DownloadHandlerBuffer();
             www.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(data));
@@ -301,7 +308,7 @@ namespace AuthenticationScope
             byte[] dataBytes = System.Text.Encoding.UTF8.GetBytes(gamePlayerData);
 
             var www = new UnityWebRequest();
-            www.url = "https://tamatem.dev.be.starmena-streams.com/api/player/set-game-data/";
+            www.url = getServerApiUrl() + "player/set-game-data/";
             www.method = UnityWebRequest.kHttpVerbPOST;
             www.downloadHandler = new DownloadHandlerBuffer();
             www.uploadHandler = new UploadHandlerRaw(dataBytes);
@@ -344,6 +351,9 @@ namespace AuthenticationScope
         void onFail()
         {
             Debug.Log("Failed to retreive token");
+            mono.AddJob(() => {
+                mono.dataRequestsInterface.loginFailed();
+            });
         }
     }
 }
