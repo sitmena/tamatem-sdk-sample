@@ -30,7 +30,7 @@ namespace AuthenticationScope
         public InputField DataPlayerInputField;
 
         private AuthenticationBehaviour getAuthenticationBehaviour() {
-            return AuthenticationBehaviour.getInstance();
+            return AuthenticationBehaviour.getInstance(this, GAME_CLIENT_ID, GAME_SCHEME, GAME_REDIRECT_URI, GAME_DEVELOPMENT_ENV);
         }
 
         public void authenticateUser() {
@@ -40,13 +40,18 @@ namespace AuthenticationScope
                 InfoText.text = "no instance found";
                 return;
             }
-            instance.setParameters(this, GAME_CLIENT_ID, GAME_SCHEME, GAME_REDIRECT_URI, GAME_DEVELOPMENT_ENV);
             instance.InitializeAuth();
+        }
+
+        public void logoutUser() {
+            InfoText.text = "start logout process";
+            PlayerPrefs.DeleteAll();
+            InfoText.text = "User logged out successfully";
         }
 
         public void getUserInfo() {
             AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || instance.GetAccessToken() == null) {
+            if(instance == null || !instance.IsloggedIn()) {
                 InfoText.text = "You need to login first";
                 if(instance == null) {
                     InfoText.text = "no instance found";
@@ -60,7 +65,7 @@ namespace AuthenticationScope
 
         public void getPurchasedItems() {
             AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || instance.GetAccessToken() == null) {
+            if(instance == null || !instance.IsloggedIn()) {
                 InfoText.text = "You need to login first";
                 if(instance == null) {
                     InfoText.text = "no instance found";
@@ -74,7 +79,7 @@ namespace AuthenticationScope
 
         public void getRedeemedItems() {
             AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || instance.GetAccessToken() == null) {
+            if(instance == null || !instance.IsloggedIn()) {
                 InfoText.text = "You need to login first";
                 if(instance == null) {
                 InfoText.text = "no instance found";
@@ -88,7 +93,7 @@ namespace AuthenticationScope
 
         public void redeemInventory() {
             AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || instance.GetAccessToken() == null) {
+            if(instance == null || !instance.IsloggedIn()) {
                 InfoText.text = "You need to login first";
                 if(instance == null) {
                     InfoText.text = "no instance found";
@@ -103,7 +108,7 @@ namespace AuthenticationScope
 
         public void connectPlayerData() {
             AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || instance.GetAccessToken() == null) {
+            if(instance == null || !instance.IsloggedIn()) {
                 InfoText.text = "You need to login first";
                 if(instance == null) {
                     InfoText.text = "no instance found";

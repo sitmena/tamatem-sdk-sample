@@ -45,16 +45,15 @@ namespace AuthenticationScope
             mono = this;
         }
 
-        internal static AuthenticationBehaviour getInstance() {
+        internal static AuthenticationBehaviour getInstance(DataRequestsProcess dataRequestsProcess, String gameClientID, String gameScheme, String gameRedirectURI, bool isDevelopment) {
+            if(_instance != null) {
+                _instance.dataRequestsInterface = dataRequestsProcess;
+                _instance.clientID = gameClientID;
+                _instance.scheme = gameScheme;
+                _instance.redirectURI = gameRedirectURI;
+                _instance.isDevelopment = isDevelopment;
+            }
             return _instance;
-        }
-
-        internal void setParameters(DataRequestsProcess dataRequestsProcess, String gameClientID, String gameScheme, String gameRedirectURI, bool isDevelopment) {
-            _instance.dataRequestsInterface = dataRequestsProcess;
-            _instance.clientID = gameClientID;
-            _instance.scheme = gameScheme;
-            _instance.redirectURI = gameRedirectURI;
-            _instance.isDevelopment = isDevelopment;
         }
 
         #if UNITY_IOS
@@ -109,7 +108,7 @@ namespace AuthenticationScope
 
         internal void getUserDataFromServer() {
             Debug.Log("getUserDataFromServer");
-            if(_accessToken == null) {
+            if(!IsloggedIn()) {
                 return;
             }
 
@@ -122,7 +121,7 @@ namespace AuthenticationScope
 
         internal void getPurchasedItems() {
             Debug.Log("getPurchasedItems");
-            if(_accessToken == null) {
+            if(!IsloggedIn()) {
                 return;
             }
 
@@ -135,7 +134,7 @@ namespace AuthenticationScope
 
         internal void getRedeemedItems() {
             Debug.Log("getRedeemedItems");
-            if(_accessToken == null) {
+            if(!IsloggedIn()) {
                 return;
             }
 
@@ -148,7 +147,7 @@ namespace AuthenticationScope
 
         internal void connectData(string playerData) {
             Debug.Log("connectData");
-            if(_accessToken == null) {
+            if(!IsloggedIn()) {
                 return;
             }
 
@@ -161,7 +160,7 @@ namespace AuthenticationScope
 
         internal void redeemInventory(int inventoryId) {
             Debug.Log("redeemInventory");
-            if(_accessToken == null) {
+            if(!IsloggedIn()) {
                 return;
             }
 
@@ -174,68 +173,61 @@ namespace AuthenticationScope
 
         internal void updateUserParameters(JObject result) {
 
-            SetAccessToken(result["access_token"].ToObject<string>());
-            SetRefreshToken(result["refresh_token"].ToObject<string>());
-            SetExpiry(result["expires_in"].ToObject<long>());
+            AccessToken = result["access_token"].ToObject<string>();
+            RefreshToken = result["refresh_token"].ToObject<string>();
+            Expiry = result["expires_in"].ToObject<long>();
         }
 
         private DateTime _JanFirst1970 = new DateTime(1970, 1, 1);
-        private string _accessToken {get; set;}
-        private long _expiry{get; set;}
-        private string _refreshToken {get; set; }
-        private JToken _user {get; set; }
 
-        internal string GetAccessToken()
-        {
-            return _accessToken;
+        private const string TamatemAccessToken = "TAMATEM_SDK_ACCESS_TOKEN_KEY";
+        private string AccessToken {
+            get {
+                return PlayerPrefs.GetString(TamatemAccessToken);
+            }
+             set {
+                PlayerPrefs.SetString(TamatemAccessToken, value);
+             }
+        }
+        private const string TamatemExpiry = "TAMATEM_SDK_EXPIRY_KEY";
+        private long Expiry {
+            get {
+                var bytes = System.Convert.FromBase64String(PlayerPrefs.GetString(TamatemExpiry));
+                return System.BitConverter.ToInt64(bytes, 0);
+            }
+             set {
+                var bytes = System.BitConverter.GetBytes(value + GetTime());
+                var millisInString = System.Convert.ToBase64String(bytes);
+                PlayerPrefs.SetString(TamatemExpiry, millisInString);
+             }
+        }
+        private const string TamatemRefreshToken = "TAMATEM_SDK_REFRESH_TOKEN_KEY";
+        private string RefreshToken {
+            get {
+                return PlayerPrefs.GetString(TamatemRefreshToken);
+            }
+             set {
+                PlayerPrefs.SetString(TamatemRefreshToken, value);
+             }
         }
 
-        internal void SetAccessToken(string accessToken)
+        private long GetTime()
         {
-            _accessToken = accessToken;
-            Debug.Log("Access Token " + _accessToken);
-        }
-
-        internal string GetRefreshToken()
-        {
-            return _refreshToken;
-        }
-
-        internal void SetRefreshToken(string refreshToken)
-        {
-            _refreshToken = refreshToken;
-            Debug.Log("Refresh Token " + _refreshToken);
-        }
-        internal long GetExpiry()
-        {
-            return _expiry;
-        }
-
-        internal void SetExpiry(long expiry)
-        {
-            _expiry = expiry + _getTime();
-            Debug.Log("Expiry " + _expiry);
-        }
-
-        private long _getTime()
-        {
-            return (long)((DateTime.Now.ToUniversalTime() - _JanFirst1970).TotalMilliseconds + 0.5);
+            return (long)((DateTime.Now.ToUniversalTime() - _JanFirst1970).TotalMilliseconds);
         }
 
         internal bool IsloggedIn()
         {
-           if (_accessToken == null && _getTime() < _expiry)
-           {
+           if (AccessToken == null || Expiry == 0 || GetTime() < Expiry) {
                 return false;
-           }
-           else {
+           } else {
                 return true;
            }
         }
 
         internal IEnumerator GetUser() {
              using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "player/")){
-                www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
@@ -251,7 +243,7 @@ namespace AuthenticationScope
 
         internal IEnumerator PurchasedInventory() {
              using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "inventory-item/")){
-                www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
@@ -267,7 +259,7 @@ namespace AuthenticationScope
 
         internal IEnumerator FilterInventory(bool isRedeemed) {
              using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "inventory-item/?is_redeemed=" + isRedeemed)){
-                www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
@@ -291,7 +283,7 @@ namespace AuthenticationScope
             www.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(data));
             www.SetRequestHeader("Accept", "application/json");
             www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+            www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success) {
@@ -314,7 +306,7 @@ namespace AuthenticationScope
             www.uploadHandler = new UploadHandlerRaw(dataBytes);
             www.SetRequestHeader("Accept", "application/json");
             www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+            www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success) {

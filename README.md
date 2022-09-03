@@ -34,7 +34,7 @@ Once your Unity project is ready and you want to setup your Android game/app, pl
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
 ```
 > **_NOTE:_** make sure these dependencies do not conflict with other libraries' dependencies.
-6. Now Open `gradleTemplate.gradle` file and paste the following line at the end of file.
+6. Then Open `gradleTemplate.gradle` file and paste the following line at the end of file.
 ```shell script
     android.useAndroidX=true
 ```
