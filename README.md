@@ -21,7 +21,7 @@ Once your Unity project is ready and you want to setup your Android game/app, pl
 1. Go to File -> Build Settings...
 2. Click on Player Settings then make sure Android tab is selected.
 3. Open Publisher Settings panel.
-4. Check `Custom Main Gradle Template` and `Custom Gradle Properties Template` checkboxes.
+4. Check `Custom Main Gradle Template`, `Custom Gradle Properties Template` and `Custom Main Manifest` checkboxes.
 5. Open `mainTemplate.gradle` file and paste the following lines inside the dependencies tag.
 ```shell script
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
