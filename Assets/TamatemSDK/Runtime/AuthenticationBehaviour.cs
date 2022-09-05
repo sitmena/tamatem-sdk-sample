@@ -67,12 +67,15 @@ namespace AuthenticationScope
 
         [MonoPInvokeCallback(typeof(DelegateCallbackFunction))]
         public static void onSuccess(string tokenModel) {
+            if(tokenModel == null){
+                return;
+            }
             Debug.Log("User Logged in iOS");
             Debug.Log("Message received: " + tokenModel);
 
-            var result = JObject.Parse(tokenModel);
-            mono.updateUserParameters(result);
             mono.AddJob(() => {
+                var result = JObject.Parse(tokenModel);
+                mono.updateUserParameters(result);
                 mono.dataRequestsInterface.loginSucceeded(result);
             });
         }
@@ -175,39 +178,57 @@ namespace AuthenticationScope
 
             AccessToken = result["access_token"].ToObject<string>();
             RefreshToken = result["refresh_token"].ToObject<string>();
-            Expiry = result["expires_in"].ToObject<long>();
+            Expiry = result["expires_in"].ToObject<long>() * 1000; // we need to store it in milliseconds instead of seconds
         }
 
         private DateTime _JanFirst1970 = new DateTime(1970, 1, 1);
 
         private const string TamatemAccessToken = "TAMATEM_SDK_ACCESS_TOKEN_KEY";
+        private string accessTokenValue = null;
         private string AccessToken {
             get {
-                return PlayerPrefs.GetString(TamatemAccessToken);
+                if(accessTokenValue == null) {
+                    accessTokenValue = PlayerPrefs.GetString(TamatemAccessToken, null);
+                }
+                return accessTokenValue;
             }
              set {
+                accessTokenValue = value;
                 PlayerPrefs.SetString(TamatemAccessToken, value);
+                PlayerPrefs.Save();
              }
         }
         private const string TamatemExpiry = "TAMATEM_SDK_EXPIRY_KEY";
+        private long expiryValue = 0;
         private long Expiry {
             get {
-                var bytes = System.Convert.FromBase64String(PlayerPrefs.GetString(TamatemExpiry));
-                return System.BitConverter.ToInt64(bytes, 0);
+                if(expiryValue == 0) {
+                    var bytes = System.Convert.FromBase64String(PlayerPrefs.GetString(TamatemExpiry, "0"));
+                    expiryValue = System.BitConverter.ToInt64(bytes, 0);
+                }
+                return expiryValue;
             }
              set {
-                var bytes = System.BitConverter.GetBytes(value + GetTime());
+                expiryValue = value + GetTime();
+                var bytes = System.BitConverter.GetBytes(expiryValue);
                 var millisInString = System.Convert.ToBase64String(bytes);
                 PlayerPrefs.SetString(TamatemExpiry, millisInString);
+                PlayerPrefs.Save();
              }
         }
         private const string TamatemRefreshToken = "TAMATEM_SDK_REFRESH_TOKEN_KEY";
+        private string refreshTokenValue = null;
         private string RefreshToken {
             get {
-                return PlayerPrefs.GetString(TamatemRefreshToken);
+                if(refreshTokenValue == null) {
+                    refreshTokenValue = PlayerPrefs.GetString(TamatemRefreshToken, null);
+                }
+                return refreshTokenValue;
             }
              set {
+                refreshTokenValue = value;
                 PlayerPrefs.SetString(TamatemRefreshToken, value);
+                PlayerPrefs.Save();
              }
         }
 
@@ -218,7 +239,7 @@ namespace AuthenticationScope
 
         internal bool IsloggedIn()
         {
-           if (AccessToken == null || Expiry == 0 || GetTime() < Expiry) {
+           if (AccessToken == null || Expiry == 0 || GetTime() > Expiry) {
                 return false;
            } else {
                 return true;
@@ -330,12 +351,15 @@ namespace AuthenticationScope
 
         void onSuccess(string obj)
         {
+            if(obj == null){
+                return;
+            }
             Debug.Log("Results retreived successfully!!");
             Debug.Log("Token retreived from Unity: " + obj);
 
-            var result = JObject.Parse(obj);
-            mono.updateUserParameters(result);
             mono.AddJob(() => {
+                var result = JObject.Parse(obj);
+                mono.updateUserParameters(result);
                 mono.dataRequestsInterface.loginSucceeded(result);
             });
         }

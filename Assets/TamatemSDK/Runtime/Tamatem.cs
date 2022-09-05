@@ -29,8 +29,13 @@ namespace AuthenticationScope
         public Text InfoText;
         public InputField DataPlayerInputField;
 
+        private AuthenticationBehaviour AuthenticationBehaviourInstance;
+
         private AuthenticationBehaviour getAuthenticationBehaviour() {
-            return AuthenticationBehaviour.getInstance(this, GAME_CLIENT_ID, GAME_SCHEME, GAME_REDIRECT_URI, GAME_DEVELOPMENT_ENV);
+            if (AuthenticationBehaviourInstance == null) {
+                AuthenticationBehaviourInstance = AuthenticationBehaviour.getInstance(this, GAME_CLIENT_ID, GAME_SCHEME, GAME_REDIRECT_URI, GAME_DEVELOPMENT_ENV);
+            }
+            return AuthenticationBehaviourInstance;
         }
 
         public void authenticateUser() {
