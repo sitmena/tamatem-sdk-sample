@@ -6,7 +6,7 @@
 	<dict>
 		<key>Headers/KeyCSDK-Swift.h</key>
 		<data>
-		sHLXf5fNEzRqXRHYxlraRDn3+uE=
+		I1A00VwVVdlXCcbPj28fxqKkzPA=
 		</data>
 		<key>Headers/KeyCSDK.h</key>
 		<data>
@@ -14,19 +14,19 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		iqlZoFAGsZ4wDSPkBiXll8b4G4A=
+		tflfi5mJSZ0KKV1hY4F0ga0aovg=
 		</data>
 		<key>Modules/KeyCSDK.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo</key>
 		<data>
-		9bBULY+pO5DHmjtFpq9SDjnfLtA=
+		Sa2jDayFoowqp6hBr3qLuIG5SxU=
 		</data>
 		<key>Modules/KeyCSDK.swiftmodule/arm64-apple-ios.swiftdoc</key>
 		<data>
-		0Cpc1D5DXzCZCizh3IlgLZOmnRA=
+		ZtxbFddC8emvvc+FYKdlW3ql1xQ=
 		</data>
 		<key>Modules/KeyCSDK.swiftmodule/arm64-apple-ios.swiftmodule</key>
 		<data>
-		rQV0n8b4i/L8t1WR/RFK6VtFqTY=
+		jSAAprjwHxcuDpEtV1oX2Tf1Uzg=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
@@ -39,7 +39,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			tznA+Us5UYmUsjzDujiID6yBD9ntQGTBG9YrRD7MxzY=
+			K5G1L/9fwXHNDcugvDD/uDVPeOTaz85HD8Mts7I2U6I=
 			</data>
 		</dict>
 		<key>Headers/KeyCSDK.h</key>
@@ -53,21 +53,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			qZ7IzFNF2UdASjdYgrk2v8OZPYUXtvBes+EIFgt8ByY=
+			oyYI1OwXz24LsFECLgSC9v5oNTzJKnOL9fua23ZG1b0=
 			</data>
 		</dict>
 		<key>Modules/KeyCSDK.swiftmodule/arm64-apple-ios.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			DeK1F3LxjgSqK6hO5N6vyucYScvYaIg9hRAA+GubXBc=
+			AQYYABd0xtFz8RLzhThmpnc0HXb4UA8DhTxkkA/xKRs=
 			</data>
 		</dict>
 		<key>Modules/KeyCSDK.swiftmodule/arm64-apple-ios.swiftmodule</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			LvhaYziMCE3SEWwRr2bpOP9Yv5NOAUw2PONWL6vXexo=
+			NMsYozqgpmaeR9dd3p1+AI2PZDsKcTxL/FWiETYzjOI=
 			</data>
 		</dict>
 		<key>Modules/module.modulemap</key>
