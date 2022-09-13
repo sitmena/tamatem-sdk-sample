@@ -10,9 +10,25 @@ using UnityEngine.SceneManagement;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using AOT;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 namespace AuthenticationScope
 {
+
+    /* Replaced with events for easier access through out the project*/
+    public interface DataRequestsProcess {
+        // void loginSucceeded(JObject result);
+        // void loginFailed();
+        // void getUserResult(string result);
+        // void purchasedItemsResults(string result);
+        // void redeemedItemsResults(string result);
+        // void redeeemInventoryResult(string result);
+        // void connectPlayerDataResult(string result);
+    }
+     
+
     public class AuthenticationBehaviour : MonoBehaviour
     {
 
@@ -25,12 +41,62 @@ namespace AuthenticationScope
         private String redirectURI;
         private bool isDevelopment;
 
+        private DateTime _JanFirst1970 = new DateTime(1970, 1, 1);
+
+        private string accessTokenValue = null;
+        private string AccessToken {
+            get {
+                return accessTokenValue;
+            }
+             set {
+                accessTokenValue = value;
+             }
+        }
+        private long expiryValue = 0;
+        private long Expiry {
+            get {
+                return expiryValue;
+            }
+             set {
+                expiryValue = value + GetTime();
+             }
+        }
+        private string refreshTokenValue = null;
+        private string RefreshToken {
+            get {
+                return refreshTokenValue;
+            }
+             set {
+                refreshTokenValue = value;
+             }
+        }
+
         private String getServerApiUrl() {
             if (isDevelopment) {
                 return "https://tamatem.dev.be.starmena-streams.com/api/";
             }
             return "https://tamatem.prod.be.starmena-streams.com/api/";
         }
+
+
+        /****
+        EVENTS
+        ****/
+        public delegate void UserLoggedInDelegate(JObject result);
+        public static UserLoggedInDelegate UserLoggedInEvent;
+        public delegate void UserLogInFailedDelegate();
+        public static UserLogInFailedDelegate UserLoginFailedEvent;
+        public delegate void GetUserDataDelegate(string result);
+        public static GetUserDataDelegate UserDataEvent;
+        public delegate void GetPurchasedItemsDelegate(string result);
+        public static GetPurchasedItemsDelegate GetPurchasedItemsEvent;
+        public delegate void GetRedeemedItemsDelegate(string result);
+        public static GetRedeemedItemsDelegate GetRedeemedItemsEvent;
+        public delegate void RedeemItemDelegate(string result);
+        public static RedeemItemDelegate RedeemItemEvent;
+        public delegate void SaveUserDataDelegate(string result);
+        public static SaveUserDataDelegate SavePlayerDataEvent;
+
 
         void Awake(){
             if (_instance == null){
@@ -43,6 +109,15 @@ namespace AuthenticationScope
 
         void Start() {
             mono = this;
+
+            /* Load cached data from file*/
+            LoadAuthData();
+        }
+
+        void Update() {
+            while (jobs.Count > 0) {
+                jobs.Dequeue().Invoke();
+            }
         }
 
         internal static AuthenticationBehaviour getInstance(DataRequestsProcess dataRequestsProcess, String gameClientID, String gameScheme, String gameRedirectURI, bool isDevelopment) {
@@ -76,14 +151,8 @@ namespace AuthenticationScope
             mono.AddJob(() => {
                 var result = JObject.Parse(tokenModel);
                 mono.updateUserParameters(result);
-                mono.dataRequestsInterface.loginSucceeded(result);
+                // mono.dataRequestsInterface.loginSucceeded(result);
             });
-        }
-
-        void Update() {
-            while (jobs.Count > 0) {
-                jobs.Dequeue().Invoke();
-            }
         }
 
         internal void AddJob(Action newJob) {
@@ -161,7 +230,7 @@ namespace AuthenticationScope
             });
         }
 
-        internal void redeemInventory(int inventoryId) {
+        internal void redeemInventoryItem(int inventoryId) {
             Debug.Log("redeemInventory");
             if(!IsloggedIn()) {
                 return;
@@ -170,7 +239,7 @@ namespace AuthenticationScope
             Debug.Log("add redeemInventory job");
             AddJob(() => {
                 // Will run on main thread, hence issue is solved
-                StartCoroutine(RedeemInventory(inventoryId));
+                StartCoroutine(RedeemInventoryItem(inventoryId));
             });
         }
 
@@ -179,57 +248,9 @@ namespace AuthenticationScope
             AccessToken = result["access_token"].ToObject<string>();
             RefreshToken = result["refresh_token"].ToObject<string>();
             Expiry = result["expires_in"].ToObject<long>() * 1000; // we need to store it in milliseconds instead of seconds
-        }
 
-        private DateTime _JanFirst1970 = new DateTime(1970, 1, 1);
-
-        private const string TamatemAccessToken = "TAMATEM_SDK_ACCESS_TOKEN_KEY";
-        private string accessTokenValue = null;
-        private string AccessToken {
-            get {
-                if(accessTokenValue == null) {
-                    accessTokenValue = PlayerPrefs.GetString(TamatemAccessToken, null);
-                }
-                return accessTokenValue;
-            }
-             set {
-                accessTokenValue = value;
-                PlayerPrefs.SetString(TamatemAccessToken, value);
-                PlayerPrefs.Save();
-             }
-        }
-        private const string TamatemExpiry = "TAMATEM_SDK_EXPIRY_KEY";
-        private long expiryValue = 0;
-        private long Expiry {
-            get {
-                if(expiryValue == 0) {
-                    var bytes = System.Convert.FromBase64String(PlayerPrefs.GetString(TamatemExpiry, "0"));
-                    expiryValue = System.BitConverter.ToInt64(bytes, 0);
-                }
-                return expiryValue;
-            }
-             set {
-                expiryValue = value + GetTime();
-                var bytes = System.BitConverter.GetBytes(expiryValue);
-                var millisInString = System.Convert.ToBase64String(bytes);
-                PlayerPrefs.SetString(TamatemExpiry, millisInString);
-                PlayerPrefs.Save();
-             }
-        }
-        private const string TamatemRefreshToken = "TAMATEM_SDK_REFRESH_TOKEN_KEY";
-        private string refreshTokenValue = null;
-        private string RefreshToken {
-            get {
-                if(refreshTokenValue == null) {
-                    refreshTokenValue = PlayerPrefs.GetString(TamatemRefreshToken, null);
-                }
-                return refreshTokenValue;
-            }
-             set {
-                refreshTokenValue = value;
-                PlayerPrefs.SetString(TamatemRefreshToken, value);
-                PlayerPrefs.Save();
-             }
+            /* Cache data to file*/
+            SaveAuthData(AccessToken,RefreshToken,Expiry);
         }
 
         private long GetTime()
@@ -246,17 +267,31 @@ namespace AuthenticationScope
            }
         }
 
+        internal void logout()
+        {
+            string _accessToken = null;
+            string _refreshToken = null;
+            long _expireTime = 0;
+
+            AccessToken = _accessToken;
+            RefreshToken = _refreshToken;
+            Expiry = _expireTime;
+            SaveAuthData(_accessToken,_refreshToken,_expireTime);
+        }
+
         internal IEnumerator GetUser() {
              using (UnityWebRequest www = UnityWebRequest.Get(getServerApiUrl() + "player/")){
                 www.SetRequestHeader("Authorization", "Bearer " + AccessToken);
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
-                    dataRequestsInterface.getUserResult(null);
+                    // dataRequestsInterface.getUserResult(null);
+                    UserDataEvent?.Invoke(null);
                     Debug.Log(www.error);
                 }
                 else {
-                    dataRequestsInterface.getUserResult(www.downloadHandler.text);
+                    // dataRequestsInterface.getUserResult(www.downloadHandler.text);
+                    UserDataEvent?.Invoke(www.downloadHandler.text);
                     Debug.Log(www.downloadHandler.text);
                 }
              }
@@ -268,11 +303,13 @@ namespace AuthenticationScope
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
-                    dataRequestsInterface.purchasedItemsResults(null);
+                    // dataRequestsInterface.purchasedItemsResults(null);
+                    GetPurchasedItemsEvent?.Invoke(null);
                     Debug.Log(www.error);
                 }
                 else {
-                    dataRequestsInterface.purchasedItemsResults(www.downloadHandler.text);
+                    // dataRequestsInterface.purchasedItemsResults(www.downloadHandler.text);
+                    GetPurchasedItemsEvent?.Invoke(www.downloadHandler.text);
                     Debug.Log(www.downloadHandler.text);
                 }
              }
@@ -284,17 +321,19 @@ namespace AuthenticationScope
                 yield return www.SendWebRequest();
 
                 if (www.result != UnityWebRequest.Result.Success) {
-                    dataRequestsInterface.redeemedItemsResults(null);
+                    // dataRequestsInterface.redeemedItemsResults(null);
+                    GetRedeemedItemsEvent?.Invoke(null);
                     Debug.Log(www.error);
                 }
                 else {
-                    dataRequestsInterface.redeemedItemsResults(www.downloadHandler.text);
+                    // dataRequestsInterface.redeemedItemsResults(www.downloadHandler.text);
+                    GetRedeemedItemsEvent?.Invoke(www.downloadHandler.text);
                     Debug.Log(www.downloadHandler.text);
                 }
              }
         }
 
-        internal IEnumerator RedeemInventory(int inventoryId) {
+        internal IEnumerator RedeemInventoryItem(int inventoryId) {
             string data = "{\"is_redeemed\":true}";
 
             var www = new UnityWebRequest();
@@ -308,11 +347,13 @@ namespace AuthenticationScope
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success) {
-                dataRequestsInterface.redeeemInventoryResult(null);
+                // dataRequestsInterface.redeeemInventoryResult(null);
+                RedeemItemEvent?.Invoke(null);
                 Debug.Log(www.error);
             }
             else {
-                dataRequestsInterface.redeeemInventoryResult(www.downloadHandler.text);
+                // dataRequestsInterface.redeeemInventoryResult(www.downloadHandler.text);
+                RedeemItemEvent?.Invoke(www.downloadHandler.text);
                 Debug.Log(www.downloadHandler.text);
             }
         }
@@ -331,15 +372,67 @@ namespace AuthenticationScope
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success) {
-                dataRequestsInterface.connectPlayerDataResult(null);
+                // dataRequestsInterface.connectPlayerDataResult(null);
+                SavePlayerDataEvent?.Invoke(null);
                 Debug.Log(www.error);
             }
             else {
-                dataRequestsInterface.connectPlayerDataResult(www.downloadHandler.text);
+                // dataRequestsInterface.connectPlayerDataResult(www.downloadHandler.text);
+                SavePlayerDataEvent?.Invoke(www.downloadHandler.text);
                 Debug.Log(www.downloadHandler.text);
             }
         }
+
+
+        /* Save to a Binary file */
+        private void SaveAuthData(string _accessToken,string _refreshToken,long _expireTime,string authfile = "/Tdata.dat")
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream file = File.Create(Application.persistentDataPath + authfile);
+            AuthenticationData data = new AuthenticationData();
+         
+            data.at = _accessToken;
+            data.rt = _refreshToken;
+            data.et = _expireTime;
+
+            bf.Serialize(file, data);
+            file.Close();
+        }
+
+        /* Load from the Binary file */
+        private void LoadAuthData(string authfile = "/Tdata.dat")
+        {
+            if(File.Exists(Application.persistentDataPath + authfile))
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                FileStream file = File.Open(Application.persistentDataPath + authfile, FileMode.Open);
+                AuthenticationData data = (AuthenticationData)bf.Deserialize(file);
+                file.Close();
+    
+                AccessToken = data.at;
+                RefreshToken = data.rt;
+                Expiry = data.et;
+            }
+            else
+            {
+                AccessToken = null;
+                RefreshToken = null;
+                Expiry = 0;
+            }
+        }
     }
+
+
+    /* Used to store auth data locally*/
+    [System.Serializable]
+    class AuthenticationData
+    {
+        public string at = "";
+        public string rt = "";
+        public long et = 0;
+    }
+
+    #if UNITY_ANDROID
 
     class AndroidPluginCallback : AndroidJavaProxy
     {
@@ -360,7 +453,7 @@ namespace AuthenticationScope
             mono.AddJob(() => {
                 var result = JObject.Parse(obj);
                 mono.updateUserParameters(result);
-                mono.dataRequestsInterface.loginSucceeded(result);
+                AuthenticationBehaviour.UserLoggedInEvent?.Invoke(result);
             });
         }
 
@@ -368,8 +461,10 @@ namespace AuthenticationScope
         {
             Debug.Log("Failed to retreive token");
             mono.AddJob(() => {
-                mono.dataRequestsInterface.loginFailed();
+                AuthenticationBehaviour.UserLoginFailedEvent?.Invoke();
             });
         }
     }
+
+    #endif
 }

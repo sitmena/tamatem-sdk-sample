@@ -8,28 +8,20 @@ using System.IO;
 
 namespace AuthenticationScope
 {
-    public interface DataRequestsProcess {
-        void loginSucceeded(JObject result);
-        void loginFailed();
-        void getUserResult(string result);
-        void purchasedItemsResults(string result);
-        void redeemedItemsResults(string result);
-        void redeeemInventoryResult(string result);
-        void connectPlayerDataResult(string result);
-    }
+    
 
     public class Tamatem : MonoBehaviour, DataRequestsProcess
     {
         //TODO: please change the below constants to match your game's configurations
-        private const string GAME_CLIENT_ID = "pi4dEipJyFLDbO9DOYWFlolNpOgzjjYI2oq0qVJz";
-        private const string GAME_SCHEME = "game1";
-        private const string GAME_REDIRECT_URI = "game1://oauth-callback";
-        private const bool GAME_DEVELOPMENT_ENV = true;
+        public string GAME_CLIENT_ID = "qD3T2xJueA94SjLX2pmJexJrjNwtyC6JFZuCKzqm";
+        public string GAME_SCHEME = "wanas";
+        public string GAME_REDIRECT_URI = "wanas://oauth-callback";
+        public bool GAME_DEVELOPMENT_ENV = false;
 
         public Text InfoText;
         public InputField DataPlayerInputField;
 
-        private AuthenticationBehaviour AuthenticationBehaviourInstance;
+        private AuthenticationBehaviour AuthenticationBehaviourInstance,instance;
 
         private AuthenticationBehaviour getAuthenticationBehaviour() {
             if (AuthenticationBehaviourInstance == null) {
@@ -38,9 +30,90 @@ namespace AuthenticationScope
             return AuthenticationBehaviourInstance;
         }
 
+        void Start()
+        {
+            instance = getAuthenticationBehaviour();
+        }
+
+        void OnEnable()
+        {
+            AuthenticationBehaviour.UserLoggedInEvent += loginSucceeded;
+            AuthenticationBehaviour.UserLoginFailedEvent += loginFailed;
+            AuthenticationBehaviour.UserDataEvent += getUserResult;
+            AuthenticationBehaviour.GetPurchasedItemsEvent += purchasedItemsResults;
+            AuthenticationBehaviour.GetRedeemedItemsEvent += redeemedItemsResults;
+            AuthenticationBehaviour.RedeemItemEvent += redeeemInventoryResult;
+            AuthenticationBehaviour.SavePlayerDataEvent += connectPlayerDataResult;
+        }
+
+        void OnDisable()
+        {
+            AuthenticationBehaviour.UserLoggedInEvent -= loginSucceeded;
+            AuthenticationBehaviour.UserLoginFailedEvent -= loginFailed;
+            AuthenticationBehaviour.UserDataEvent -= getUserResult;
+            AuthenticationBehaviour.GetPurchasedItemsEvent -= purchasedItemsResults;
+            AuthenticationBehaviour.GetRedeemedItemsEvent -= redeemedItemsResults;
+            AuthenticationBehaviour.RedeemItemEvent -= redeeemInventoryResult;
+            AuthenticationBehaviour.SavePlayerDataEvent -= connectPlayerDataResult;
+        }
+
+        //Callback add your game logic in here */
+
+        void loginSucceeded(JObject result) {
+            //TODO: Handle your login data here
+            InfoText.text = "User Logged In Successfully";
+        }
+
+        void loginFailed() {
+            //TODO: Handle being failed to login here
+            InfoText.text = "Failed to login";
+        }
+
+        void purchasedItemsResults(string result) {
+            if(result == null) {
+                InfoText.text = "Failed to retrieve purchased items";
+            } else {
+                InfoText.text = result;
+            }
+        }
+
+        void redeemedItemsResults(string result) {
+            if(result == null) {
+                InfoText.text = "Failed to retrieve redeemed items";
+            } else {
+                InfoText.text = result;
+            }
+        }
+
+        void redeeemInventoryResult(string result) {
+            if(result == null) {
+                InfoText.text = "Failed to redeem item";
+            } else {
+                InfoText.text = result;
+            }
+        }
+
+        void connectPlayerDataResult(string result) {
+            if(result == null) {
+                InfoText.text = "Failed to connect player data";
+            } else {
+                InfoText.text = result;
+            }
+        }
+
+        void getUserResult(string result) {
+            if(result == null) {
+                InfoText.text = "Failed to get user info";
+            } else {
+                InfoText.text = result;
+            }
+        }
+
+        /* Call these functions to tryout the flow*/
+
+
         public void authenticateUser() {
             InfoText.text = "start login process";
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
             if(instance == null) {
                 InfoText.text = "no instance found";
                 return;
@@ -50,18 +123,18 @@ namespace AuthenticationScope
 
         public void logoutUser() {
             InfoText.text = "start logout process";
-            PlayerPrefs.DeleteAll();
+            if(checkInstance() == false)
+            {
+                return;
+            }
+            instance.logout();
             InfoText.text = "User logged out successfully";
         }
 
         public void getUserInfo() {
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || !instance.IsloggedIn()) {
-                InfoText.text = "You need to login first";
-                if(instance == null) {
-                    InfoText.text = "no instance found";
-                }
-               return;
+            if(checkInstance() == false)
+            {
+                return;
             }
 
             InfoText.text = "Loading user info ...";
@@ -69,56 +142,40 @@ namespace AuthenticationScope
         }
 
         public void getPurchasedItems() {
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || !instance.IsloggedIn()) {
-                InfoText.text = "You need to login first";
-                if(instance == null) {
-                    InfoText.text = "no instance found";
-                }
-               return;
+            if(checkInstance() == false)
+            {
+                return;
             }
-
             InfoText.text = "Loading purchased items ...";
             instance.getPurchasedItems();
         }
 
         public void getRedeemedItems() {
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || !instance.IsloggedIn()) {
-                InfoText.text = "You need to login first";
-                if(instance == null) {
-                InfoText.text = "no instance found";
-            }
-               return;
+            if(checkInstance() == false)
+            {
+                return;
             }
 
             InfoText.text = "Loading redeemed items ...";
             instance.getRedeemedItems();
         }
 
-        public void redeemInventory() {
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || !instance.IsloggedIn()) {
-                InfoText.text = "You need to login first";
-                if(instance == null) {
-                    InfoText.text = "no instance found";
-                }
-               return;
+        public void redeemInventoryItem(int itemID) {
+            if(checkInstance() == false)
+            {
+                return;
             }
 
             InfoText.text = "Redeeming items ...";
             // TODO: change the following inventory id based on your logic and preference for the non-redeemed inventories.
-            instance.redeemInventory(61);
+            instance.redeemInventoryItem(itemID);
         }
 
         public void connectPlayerData() {
-            AuthenticationBehaviour instance = getAuthenticationBehaviour();
-            if(instance == null || !instance.IsloggedIn()) {
-                InfoText.text = "You need to login first";
-                if(instance == null) {
-                    InfoText.text = "no instance found";
-                }
-               return;
+            
+            if(checkInstance() == false)
+            {
+                return;
             }
             string json = "";
 
@@ -136,54 +193,18 @@ namespace AuthenticationScope
             instance.connectData(json);
         }
 
-        public void loginSucceeded(JObject result) {
-            //TODO: Handle your login data here
-            InfoText.text = "User Logged In Successfully";
-        }
-
-        public void loginFailed() {
-            //TODO: Handle being failed to login here
-            InfoText.text = "Failed to login";
-        }
-
-        public void purchasedItemsResults(string result) {
-            if(result == null) {
-                InfoText.text = "Failed to retrieve purchased items";
-            } else {
-                InfoText.text = result;
+        private bool checkInstance()
+        {
+            if(instance == null || !instance.IsloggedIn()) {
+               InfoText.text = "You need to login first";
+               return false;
+            }
+            else
+            {
+               return true;
             }
         }
 
-        public void redeemedItemsResults(string result) {
-            if(result == null) {
-                InfoText.text = "Failed to retrieve redeemed items";
-            } else {
-                InfoText.text = result;
-            }
-        }
-
-        public void redeeemInventoryResult(string result) {
-            if(result == null) {
-                InfoText.text = "Failed to redeem item";
-            } else {
-                InfoText.text = result;
-            }
-        }
-
-        public void connectPlayerDataResult(string result) {
-            if(result == null) {
-                InfoText.text = "Failed to connect player data";
-            } else {
-                InfoText.text = result;
-            }
-        }
-
-        public void getUserResult(string result) {
-            if(result == null) {
-                InfoText.text = "Failed to get user info";
-            } else {
-                InfoText.text = result;
-            }
-        }
+        
     }
 }
